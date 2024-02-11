@@ -11,8 +11,6 @@ directory = '.'
 links = pd.read_csv('./AllLinks.csv')
 links['Index'] = links.index
 
-links = links.iloc[:5,:]
-
 def record_mobile_features(url):
 
     url_idx = url['Index']
