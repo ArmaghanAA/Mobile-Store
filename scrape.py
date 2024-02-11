@@ -5,14 +5,21 @@ import random
 import time
 import pandas as pd
 import os
+import concurrent.futures
 
 directory = '.'
-links = pd.read_csv('C:/Users/ztava/Downloads/Zahra_AllLinks.csv')
+links = pd.read_csv('./AllLinks.csv')
+links['Index'] = links.index
+
+links = links.iloc[:5,:]
 
 def record_mobile_features(url):
 
+    url_idx = url['Index']
+    url = url['Link']
+
     headers = {'User-Agent': 'Chrome/120.0.0.0', 'Accept-Language': 'en-US'}
-    time.sleep(random.randint(8, 10))
+    time.sleep(random.randint(5, 7))
 
     page = requests.get(url, headers=headers, timeout=5)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -44,7 +51,8 @@ def record_mobile_features(url):
                     name_sub_section = f'{section_name}_{name_sub_section}'
                 # sub_sections_set[name_sub_section] = [_.strip() for _ in sub_section[sub_sec_idx].find_all('td')[1].text.strip().split('\n')]
                 sub_sections_set[name_sub_section] = sub_section[sub_sec_idx].find_all('td')[1].text.strip()
-            except IndexError:
+            except Exception as e:
+                print(e)
                 continue
         
         sections_set[section_name] = sub_sections_set
@@ -53,36 +61,26 @@ def record_mobile_features(url):
     for d in sections_set.values():
         record.update(d)
 
+    record['Index'] = url_idx
+    print(f'Index {url_idx} recoreded.')
+    
     return record
 
-def make_dataset(links, file_path):
+def scrape_all_links(urls):
 
-    loop_threshold = 10
-    num_loop = 1
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
 
-    first_idx = links.index.tolist()[0]
-    last_idx = links.index.tolist()[-1]
+        futures = [executor.submit(record_mobile_features, urls.iloc[idx, :]) for idx in urls.index]
 
-    records = pd.DataFrame()
-
-    for idx in range(first_idx, last_idx+1):
-        url = links['Link'][idx]
-
-        while num_loop < loop_threshold:
-            try:
-                mobile_info = record_mobile_features(url)
-                records = pd.concat([records, pd.DataFrame(mobile_info)])
-                print(f'url index {idx} recorded.')
-                num_loop = 1
-                break
-
-            except Exception as e:
-                print(e)
-                num_loop += 1
-                records.sort_index(axis = 1).to_csv(file_path, index=False)
-                continue
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            results.append(pd.DataFrame(result))
+            
+    result_df = pd.concat(results)
     
-    records.sort_index(axis = 1).to_csv(file_path, index=False)
-    return records
+    return result_df
 
-make_dataset(links,os.path.join(directory,'mobile_scrap.csv'))
+df = scrape_all_links(links)
+
+pd.merge(df, links, on='Index').to_csv('Scrape_Dataset.csv', index=False)
