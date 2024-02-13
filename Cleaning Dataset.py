@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-
 import re
 
-df = pd.read_csv('Step1_df.csv')
-links = pd.read_csv('AllLinks.csv')
+df = pd.read_csv('./Scrape/Step1_df.csv')
+links = pd.read_csv('./Scrape/AllLinks.csv')
 
 ####### Display Part
 def extract_display_size(input_string):
@@ -221,20 +220,23 @@ def extract_year(launch_announced):
 
 # network_technology
 def extract_network_technology(Net_tech):
+    Teches=Net_tech.split('/')
+
     is_2g = 0
     is_3g = 0
     is_4g = 0
     is_5g = 0
     Network = np.nan
-    if Net_tech:
+    
+    if len(Net_tech):
 
-        if 'GSM' or 'CDMA' or 'TDMA' in Net_tech:
+        if ('GSM'in Net_tech) or ('CDMA'in Net_tech) or ('TDMA' in Net_tech):
             is_2g = 1
             Network = '2G'
-        if 'HSPA' or 'EVDO' or 'UMTS' in Net_tech:
+        if ('HSPA' in Net_tech) or ('EVDO' in Net_tech) or ('UMTS' in Net_tech):
             is_3g = 1
             Network = '3G'
-        if 'LTE' or 'WiMAX' in Net_tech:
+        if ('LTE' in Net_tech) or ('WiMAX' in Net_tech):
             is_4g = 1
             Network = '4G'
         if '5G' in Net_tech:
@@ -253,7 +255,8 @@ def extract_network_technology(Net_tech):
 ### Body
 def extract_body_dimensions(body_dimensions):
     try:
-        dimensions_mm = re.findall(r'^(.+) mm', body_dimensions)
+        dimensions_mm = re.sub(r'Unfolded:|folded[^)]*', '', body_dimensions)
+        dimensions_mm = re.findall(r'^(.+) mm', dimensions_mm)
         dimensions_mm = dimensions_mm[0]
     except:
         dimensions_mm = np.nan
@@ -353,7 +356,7 @@ df['Display_Type'] = df['Display_Type_Specific'].apply(extract_display_type)
 
 ### Platform Part
 df['Platform_OS'], df['Platform_OS_version'] = zip(*df['Platform_OS'].apply(extract_platform))
-df['Platform_CPU'] = df['Platform_CPU'].apply(extract_cpu)
+df['Core_Num'] = df['Platform_CPU'].apply(extract_cpu)
 
 ### Memory Part
 df.loc[df['Memory_Card slot'] != 'No', 'Memory_Card slot'] = 1
@@ -372,8 +375,8 @@ df['Comms_WLAN'] = df['Comms_WLAN'].apply(boolian_extract)
 df['Comms_Infrared port'] = df['Comms_Infrared port'].apply(boolian_extract)
 
 ### Sound Part
-df['jack_port'] = df['Sound_3.5mm jack'].apply(boolian_extract)
-df['LoudSpeaker'] = df['Sound_Loudspeaker'].apply(boolian_extract)
+df['Sound_3.5mm jack'] = df['Sound_3.5mm jack'].apply(boolian_extract)
+df['Sound_Loudspeaker'] = df['Sound_Loudspeaker'].apply(boolian_extract)
 
 ### Sensor
 df['Features_Sensors'] = df['Features_Sensors'].apply(extract_sensor)
@@ -388,6 +391,23 @@ df['Network'], df['is_2g'], df['is_3g'], df['is_4g'], df['is_5g'] = zip(*df['Net
 df['Body_Dimensions_mm'], df['Body_Dimensions_inches'] = zip(*df['Body_Dimensions'].apply(extract_body_dimensions))
 df['Body_Weight_g'], df['Body_Weight_oz'] = zip(*df['Body_Weight'].apply(extract_body_weight))
 
+df['Body_Dimensions_hight_inches'], df['Body_Dimensions_width_inches'], df['Body_Dimensions_depth_inches'] = zip(*df['Body_Dimensions_inches'].fillna('0x0x0').apply(lambda col: col.split('x')))
+df['Body_Dimensions_hight_inches'] = df['Body_Dimensions_hight_inches'].astype(float)
+df['Body_Dimensions_width_inches'] = df['Body_Dimensions_width_inches'].astype(float)
+df['Body_Dimensions_depth_inches'] = df['Body_Dimensions_depth_inches'].astype(float)
+df.loc[df['Body_Dimensions_hight_inches'] == 0.0, :] = np.nan
+df.loc[df['Body_Dimensions_width_inches'] == 0.0, :] = np.nan
+df.loc[df['Body_Dimensions_depth_inches'] == 0.0, :] = np.nan
+
+df['Body_Dimensions_hight_mm'], df['Body_Dimensions_width_mm'], df['Body_Dimensions_depth_mm'] = zip(*df['Body_Dimensions_mm'].fillna('0x0x0').apply(lambda col: col.split('x')))
+df['Body_Dimensions_hight_mm'] = df['Body_Dimensions_hight_mm'].astype(float)
+df['Body_Dimensions_width_mm'] = df['Body_Dimensions_width_mm'].astype(float)
+df['Body_Dimensions_depth_mm'] = df['Body_Dimensions_depth_mm'].astype(float)
+df.loc[df['Body_Dimensions_hight_mm'] == 0.0, :] = np.nan
+df.loc[df['Body_Dimensions_width_mm'] == 0.0, :] = np.nan
+df.loc[df['Body_Dimensions_depth_mm'] == 0.0, :] = np.nan
+
+
 (df['Nano_SIM'], df['Micro_SIM'], 
  df['Mini_SIM'], df['eSIM'], 
  df['Single_SIM'], df['Dual_SIM']) = zip(*df['Body_SIM'].apply(extract_sim))
@@ -401,8 +421,8 @@ df['Price'] = df['Misc_Price'].apply(price_detect)
 
 
 ### Camera_Num
-df['Main_Camera_Num'] = np.nan
-df['Selfie_Camera_Num'] = np.nan
+df['Main_Camera_Num'] = 0
+df['Selfie_Camera_Num'] = 0
 
 df.loc[~df['Main Camera_Single'].isna(),'Main_Camera_Num'] = 1
 df.loc[~df['Main Camera_Dual'].isna(),'Main_Camera_Num'] = 2
@@ -416,15 +436,165 @@ df.loc[~df['Selfie camera_Single'].isna(),'Selfie_Camera_Num'] = 1
 df.loc[~df['Selfie camera_Dual'].isna(),'Selfie_Camera_Num'] = 2
 df.loc[~df['Selfie camera_Triple'].isna(),'Selfie_Camera_Num'] = 3
 
-df.drop(columns=['Display_Size', 'Display_Resolution', 'Memory_Card slot', 'Sound_3.5mm jack', 'Sound_Loudspeaker',
+df.drop(columns=['Display_Size', 'Display_Resolution', 'Memory_Card slot',
                  'Launch_Announced', 'Network_Technology', 'Body_Dimensions', 'Body_Weight', 'Body_SIM',
                  'Main Camera_Dual', 'Main Camera_Features',
        'Main Camera_Single', 'Main Camera_Triple', 'Main Camera_Video', 'Selfie camera_Features',
        'Selfie camera_Single', 'Selfie camera_Video',
        'Selfie camera_Dual', 'Selfie camera_Triple', 'Main Camera_Quad', 'Main Camera_Dual or Triple',
-       'Main Camera_Penta', 'Main Camera_Five', 'Misc_Price'], inplace=True)
+       'Main Camera_Penta', 'Main Camera_Five', 'Misc_Price', 'Platform_CPU'], inplace=True)
 
 
 df['Name'], df['Device_id'] = zip(*links['Link'].apply(lambda col: col.split('/')[-1].split('.')[0].split('-')))
+df['Device_id'] = df['Device_id'].astype('int64')
 
 df.to_csv('Cleaned_df.csv', index=False)
+df = df.dropna(axis = 0)
+
+## Device Table
+Device_cols = ['Device_id', 'Name', 'Year', 'Device_label', 'Price', 'Battery_Type', 'Battery_Capacity_mAh', 'Main_Camera_Num', 'Selfie_Camera_Num']
+Device = df.loc[:,Device_cols]
+Device.columns = ['ID', 'Name', 'Year', 'Category', 'Price', 'Battery Type', 'Battery Capacity', 'Main Camera Num', 'Selfie Camera Num']
+Device.to_csv('./Tables/Device.csv', index=False)
+
+## Brand Table
+Brand_cols = ['Device_id', 'Brand']
+Brand = df.loc[:,Brand_cols]
+Brand.columns = ['Device ID', 'Brand']
+Brand.to_csv('./Tables/Brand.csv', index=False)
+
+## Body Table
+Body_cols = ['Device_id', 'Body_Dimensions_mm', 
+             'Body_Dimensions_hight_mm', 'Body_Dimensions_width_mm', 'Body_Dimensions_depth_mm',
+             'Body_Dimensions_inches',
+             'Body_Dimensions_hight_inches', 'Body_Dimensions_width_inches', 'Body_Dimensions_depth_inches',
+             'Body_Weight_g', 'Body_Weight_oz']
+Body = df.loc[:,Body_cols]
+Body.columns = ['Device ID', 'Body Dims(mm)', 
+                'Body Hight(mm)', 'Body Width(mm)', 'Body Depth(mm)',
+                'Body Dims(inch)', 
+                'Body Hight(inch)', 'Body Width(inch)', 'Body Depth(inch)',
+                'Body Weight(g)', 'Body Weight(oz)']
+Body.to_csv('./Tables/Body.csv', index=False)
+
+## Display Table
+Display_cols = ['Device_id', 'Display_Type', 'Display_Type_Specific',
+                'Display_Size_inches', 'Display_Size_cm2', 'screen_to_body_ratio', 
+                'Display_Resolution_pixels', 'Display_Resolution_width', 'Display_Resolution_hight',
+                'Display_Resolution_ppi', 'Display_Resolution_ratio']
+Display = df.loc[:,Display_cols]
+Display.columns = ['Device ID', 'Type', 'Type Specific', 'Size(inch)', 'Size(cm2)', 'Screen Body Ratio', 'Resolution Pixel',
+                   'Resolution Width', 'Resolution Hight', 'Resolution ppi', 'Resolution Ratio']
+Display.to_csv('./Tables/Display.csv', index=False)
+
+## Network Table
+Network_cols = ['Device_id', 'Network', 'is_2g', 'is_3g', 'is_4g', 'is_5g']
+Network = df.loc[:,Network_cols]
+Network.columns = ['Device ID', 'Network', 'is 2g', 'is 3g', 'is 4g', 'is 5g']
+Network.to_csv('./Tables/Network.csv', index=False)
+
+## Sensor Table
+Sensor_cols = ['Device_id', 'Features_Sensors']
+Sensor = df.loc[:,Sensor_cols]
+Sensor.columns = ['Device ID', 'Sensor']
+Sensor.loc[~Sensor['Sensor'].isna(),'Sensor'] = Sensor.loc[~Sensor['Sensor'].isna(),'Sensor'].apply(lambda col: col.split(','))
+Sensor = Sensor.explode('Sensor')
+Sensor.reset_index(inplace=True)
+Sensor.drop(columns=['index'], inplace=True)
+Sensor.to_csv('./Tables/Sensor.csv', index=False)
+
+## Sound Table
+Sound_cols = ['Device_id', 'Sound_3.5mm jack', 'Sound_Loudspeaker']
+Sound = df.loc[:,Sound_cols]
+Sound.columns = ['Device ID', 'Jack', 'Loudspeaker']
+
+Sound.loc[Sound['Jack'] == 1, 'Jack'] = 'Jack'
+Sound.loc[Sound['Loudspeaker'] == 1, 'Loudspeaker'] = 'Loudspeaker'
+Sound['Sound'] = Sound.apply(lambda row: [str(val) for val in row if type(val) != int], axis = 1)
+Sound = Sound.explode('Sound')
+Sound.reset_index(inplace=True)
+Sound.drop(columns=['Jack', 'Loudspeaker', 'index'], inplace=True)
+Sound.to_csv('./Tables/Sound.csv', index=False)
+
+## Processor Table
+Processor_cols = ['Device_id', 'Core_Num']
+Processor = df.loc[:,Processor_cols]
+Processor.columns = ['Device ID', 'CPU Core']
+Processor.to_csv('./Tables/Processor.csv', index=False)
+
+## Memory Table
+Memory_cols = ['Device_id', 'Memory_Internal']
+Memory = df.loc[:,Memory_cols]
+Memory.columns = ['Device ID', 'Memory']
+Memory.loc[~Memory['Memory'].isna(),'Memory'] = Memory.loc[~Memory['Memory'].isna(),'Memory'].apply(lambda col: col.split(','))
+Memory = Memory.explode('Memory')
+Memory.reset_index(inplace=True)
+Memory.drop(columns=['index'], inplace=True)
+Memory.to_csv('./Tables/Memory.csv', index=False)
+
+## RAM Table
+RAM_cols = ['Device_id', 'RAM']
+RAM = df.loc[:,RAM_cols]
+RAM.columns = ['Device ID', 'RAM']
+RAM.loc[~RAM['RAM'].isna(),'RAM'] = RAM.loc[~RAM['RAM'].isna(),'RAM'].apply(lambda col: col.split(','))
+RAM = RAM.explode('RAM')
+RAM.reset_index(inplace=True)
+RAM.drop(columns=['index'], inplace=True)
+RAM.to_csv('./Tables/RAM.csv', index=False)
+
+## SIM Table
+SIM_cols = ['Device_id', 'Nano_SIM',
+       'Micro_SIM', 'Mini_SIM', 'eSIM', 'Single_SIM', 'Dual_SIM',]
+SIM = df.loc[:,SIM_cols]
+SIM.columns = ['Device_id', 'Nano',
+       'Micro', 'Mini', 'eSIM', 'Single', 'Dual']
+
+SIM.loc[SIM['Micro'] == 1, 'Micro'] = 'Micro'
+SIM.loc[SIM['Mini'] == 1, 'Mini'] = 'Mini'
+SIM.loc[SIM['eSIM'] == 1, 'eSIM'] = 'eSIM'
+SIM.loc[SIM['Nano'] == 1, 'Nano'] = 'Nano'
+SIM['SIM Type'] = SIM.loc[:,['Nano','Micro', 'Mini', 'eSIM']].apply(lambda row: [str(val) for val in row if type(val) != int], axis = 1)
+SIM = SIM.explode('SIM Type')
+SIM.reset_index(inplace=True)
+SIM.drop(columns=['Nano','Micro', 'Mini', 'eSIM', 'index'], inplace=True)
+
+SIM.loc[SIM['Single'] == 1, 'Single'] = 'Single'
+SIM.loc[SIM['Dual'] == 1, 'Dual'] = 'Dual'
+SIM['SIM Num'] = SIM.loc[:,['Single', 'Dual']].apply(lambda row: [str(val) for val in row if type(val) != int], axis = 1)
+SIM = SIM.explode('SIM Num')
+SIM.reset_index(inplace=True)
+SIM.drop(columns=['Single', 'Dual', 'index'], inplace=True)
+
+# SIM.loc[SIM['SIM Num'] == 0, 'SIM Num'] = np.nan
+# SIM.loc[SIM['SIM Type'] == 0, 'SIM Type'] = np.nan
+
+SIM.to_csv('./Tables/SIM.csv', index=False)
+
+## OS Table
+OS_cols = ['Device_id', 'Platform_OS', 'Platform_OS_version']
+OS = df.loc[:,OS_cols]
+OS.columns = ['Device ID', 'Name', 'Version']
+OS.to_csv('./Tables/OS.csv', index=False)
+
+## Communications Table
+Communications_cols = ['Device_id', 'Comms_Bluetooth', 'Comms_Infrared port', 'Comms_NFC',
+       'Comms_Positioning', 'Comms_Radio', 'Comms_USB', 'Comms_WLAN']
+Communications = df.loc[:,Communications_cols]
+Communications.columns = ['Device_id', 'Bluetooth', 'Infrared port', 'NFC',
+       'Positioning', 'Radio', 'USB', 'WLAN']
+Communications.loc[Communications['Bluetooth'] == 1, 'Bluetooth'] = 'Bluetooth'
+Communications.loc[Communications['Infrared port'] == 1, 'Infrared port'] = 'Infrared port'
+Communications.loc[Communications['NFC'] == 1, :] = 'NFC'
+Communications.loc[Communications['Positioning'] == 1, 'Positioning'] = 'Positioning'
+Communications.loc[Communications['USB'] == 1, 'USB'] = 'USB'
+Communications.loc[Communications['WLAN'] == 1, 'WLAN'] = 'WLAN'
+
+Communications['Communication Type'] = Communications.apply(lambda row: [str(val) for val in row if type(val) != int], axis = 1)
+Communications = Communications.explode('Communication Type')
+Communications.reset_index(inplace=True)
+
+Communications.drop(columns=['Bluetooth', 'Infrared port', 'NFC',
+       'Positioning', 'Radio', 'USB', 'WLAN', 'index'], inplace=True)
+# Communications.loc[Communications['Communication Type'] == 0, 'Communication Type'] = np.nan
+Communications.to_csv('./Tables/Communications.csv', index=False)
+
