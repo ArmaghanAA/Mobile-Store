@@ -10,6 +10,8 @@ import concurrent.futures
 directory = '.'
 links = pd.read_csv('./AllLinks.csv')
 links['Index'] = links.index
+links = links.sort_index()
+links = links.iloc[90:100,:]
 
 def record_mobile_features(url):
 
@@ -17,7 +19,7 @@ def record_mobile_features(url):
     url = url['Link']
 
     headers = {'User-Agent': 'Chrome/120.0.0.0', 'Accept-Language': 'en-US'}
-    time.sleep(random.randint(5, 7))
+    time.sleep(random.randint(10, 12))
 
     page = requests.get(url, headers=headers, timeout=5)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -29,7 +31,7 @@ def record_mobile_features(url):
     sections_set = {}
     num_section = len(parts)
 
-    product_name = soup.find_all('title')[0].text.split('-')[0].strip()
+    product_name = soup.find_all('title')[0].text.strip()
     sections_set['Name'] = {'Name':[product_name]}
 
     for sec_idx in range(num_section):
@@ -49,8 +51,7 @@ def record_mobile_features(url):
                     name_sub_section = f'{section_name}_{name_sub_section}'
                 # sub_sections_set[name_sub_section] = [_.strip() for _ in sub_section[sub_sec_idx].find_all('td')[1].text.strip().split('\n')]
                 sub_sections_set[name_sub_section] = sub_section[sub_sec_idx].find_all('td')[1].text.strip()
-            except Exception as e:
-                print(e)
+            except IndexError:
                 continue
         
         sections_set[section_name] = sub_sections_set
@@ -69,7 +70,7 @@ def scrape_all_links(urls):
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
 
-        futures = [executor.submit(record_mobile_features, urls.iloc[idx, :]) for idx in urls.index]
+        futures = [executor.submit(record_mobile_features, urls.loc[urls['Index']==idx, :]) for idx in urls.index]
 
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
