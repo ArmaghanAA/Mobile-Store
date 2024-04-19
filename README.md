@@ -79,7 +79,7 @@ pip install -r requirements.txt
 6. **Visualize Results**:
    - Open and explore the `PowerBI/Reports.pbix` to interact with visual data representations.
 
-## 🤝 Feedback and Support
+## 🤝 Feedback
 We welcome any feedback, bug reports, and suggestions. Please let us know if you encounter any issues or have ideas for improvement.
 
 ## Meet Our Team 
@@ -89,4 +89,4 @@ We welcome any feedback, bug reports, and suggestions. Please let us know if you
 [<img src="https://avatars.githubusercontent.com/u/81512968?v=4" width="35">](https://github.com/reyhane79)
 [<img src="https://avatars.githubusercontent.com/u/117204770?v=4" width="35">](https://github.com/M1994kh)
 
-##### Special thanks to our mentor [Sina Asghari](https://github.com/sinaaasghari) for leading us.
+##### Special thanks to our mentor [Sina Asghari](https://github.com/sinaaasghari) for leading us through this project.
