@@ -82,11 +82,11 @@ pip install -r requirements.txt
 ## 🤝 Feedback
 We welcome any feedback, bug reports, and suggestions. Please let us know if you encounter any issues or have ideas for improvement.
 
-## Meet Our Team 
-[<img src="https://avatars.githubusercontent.com/u/79264959?v=4" width="35">](https://github.com/ZahraTavakkol)
-[<img src="https://avatars.githubusercontent.com/u/121010832?v=4" width="35">](https://github.com/ArmaghanAA)
-[<img src="https://avatars.githubusercontent.com/u/121010832?v=4" width="35">](https://github.com/mahdibch)
-[<img src="https://avatars.githubusercontent.com/u/81512968?v=4" width="35">](https://github.com/reyhane79)
-[<img src="https://avatars.githubusercontent.com/u/117204770?v=4" width="35">](https://github.com/M1994kh)
+## ⚽️ Meet Our Team 
+  - [Zahra](https://github.com/ZahraTavakkol)
+  - [Armaghan](https://github.com/ArmaghanAA)
+  - [Mahdi](https://github.com/mahdibch)
+  - [Reyhane](https://github.com/reyhane79)
+  - [Mehran](https://github.com/M1994kh)
 
-##### Special thanks to our mentor [Sina Asghari](https://github.com/sinaaasghari) for leading us through this project.
+#### And special thanks to our mentor [Sina Asghari](https://github.com/sinaaasghari) for leading us through this project.
